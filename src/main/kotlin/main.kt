@@ -3,7 +3,6 @@ import java.math.BigInteger
 import java.net.ConnectException
 import java.net.ServerSocket
 import java.net.Socket
-import java.nio.charset.Charset
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.concurrent.thread
@@ -48,12 +47,10 @@ class Client(private val host: String, private val port: String) {
                 print("> ")
                 val word: String? = reader.readLine()
                 if (word == null || word == "") {
-                    outputStream.write("exit\n")
-                    outputStream.flush()
+                    write("exit")
                     shutdown()
                 }
-                outputStream.write(word + '\n')
-                outputStream.flush()
+                write(word!!)
                 val serverWord: String? = inputStream.readLine()
                 serverWord?.let {
                     println(serverWord)
@@ -63,6 +60,11 @@ class Client(private val host: String, private val port: String) {
             println(e.message)
             shutdown()
         }
+    }
+
+    private fun write(message: String) {
+        outputStream.write((message + '\n'))
+        outputStream.flush()
     }
 
     private fun init() {
@@ -76,6 +78,7 @@ class Client(private val host: String, private val port: String) {
             exitProcess(1)
         }
     }
+
 
     private fun shutdown() {
         try {
@@ -104,19 +107,23 @@ fun cmdArgumentsParser(args: Array<String>): Map<String, String> {
             when (args[i]) {
                 "-s", "--server" -> {
                     if (!parameters.containsKey("type")) {
-                        parameters["type"] = "server"; i++
+                        parameters["type"] = "server"
+                        i++
                     } else throw IllegalArgumentException("Input parameter must be either server or client!")
                 }
                 "-c", "--client" -> {
                     if (!parameters.containsKey("type")) {
-                        parameters["type"] = "client"; i++
+                        parameters["type"] = "client"
+                        i++
                     } else throw IllegalArgumentException("Input parameter must be either server or client!")
                 }
                 "-p", "--port" -> {
-                    parameters["port"] = args[i + 1]; i++
+                    parameters["port"] = args[i + 1]
+                    i++
                 }
                 "-h", "--host" -> {
-                    parameters["host"] = args[i + 1]; i++
+                    parameters["host"] = args[i + 1]
+                    i++
                 }
                 else -> i++
             }
@@ -168,20 +175,21 @@ class Server(private val port: String) {
 
     class ClientHandler(private val socket: Socket) : Runnable {
 
+        private val fibonacci = FastFibonacci()
         private var active = true
-        private val reader = Scanner(socket.getInputStream())
-        private val writer: OutputStream = socket.getOutputStream()
+        private val inputStream = Scanner(socket.getInputStream())
+        private val outputStream = BufferedWriter(OutputStreamWriter(socket.getOutputStream()))
 
         override fun run() {
             try {
                 while (active) {
-                    val input: String? = reader.nextLine()
+                    val input: String? = inputStream.nextLine()
                     if (input == "exit")
                         shutdown()
                     else {
                         input?.let {
                             when (isValidNumber(input)) {
-                                true -> write(fibonacciCalculator(input.toInt()).toString())
+                                true -> write(fibonacci.fastFibonacci(input.toInt()).toString())
                                 false -> write("Invalid number! Numbers must be positive or zero. Please try again!")
                             }
                         }
@@ -193,8 +201,8 @@ class Server(private val port: String) {
         }
 
         private fun write(message: String) {
-            val m = (message + '\n').toByteArray(Charset.defaultCharset())
-            writer.write(m)
+            outputStream.write((message + '\n'))
+            outputStream.flush()
         }
 
         private fun isValidNumber(input: String?): Boolean {
@@ -207,8 +215,8 @@ class Server(private val port: String) {
         private fun shutdown() {
             try {
                 socket.close()
-                reader.close()
-                writer.close()
+                inputStream.close()
+                outputStream.close()
             } catch (e: Exception) {
                 println(e.message)
             } finally {
@@ -217,18 +225,37 @@ class Server(private val port: String) {
             }
         }
 
-        private fun fibonacciCalculator(n: Int): BigInteger {
-            var a = BigInteger.ZERO
-            var b = BigInteger.ONE
-            var c: BigInteger
-            if (n == 0)
-                return a
-            for (i in 2..n) {
-                c = a.add(b)
-                a = b
-                b = c
+        inner class FastFibonacci {
+
+            fun fastFibonacci(n: Int): BigInteger {
+                val matrix = arrayOf(BigInteger.ONE, BigInteger.ONE, BigInteger.ONE, BigInteger.ZERO)
+                return matrixPow(matrix, n)[1]
             }
-            return b
+
+            private fun matrixPow(matrixArg: Array<BigInteger>, nArg: Int): Array<BigInteger> {
+                var matrix = matrixArg
+                var n = nArg
+                var result = arrayOf(BigInteger.ONE, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ONE)
+                while (n != 0) {
+                    if (n % 2 != 0) result = matrixMultiply(result, matrix)
+                    n /= 2
+                    matrix = matrixMultiply(matrix, matrix)
+                }
+                return result
+            }
+
+            private fun matrixMultiply(x: Array<BigInteger>, y: Array<BigInteger>): Array<BigInteger> {
+                return arrayOf(
+                    Multiply(x[0], y[0]).add(Multiply(x[1], y[2])),
+                    Multiply(x[0], y[1]).add(Multiply(x[1], y[3])),
+                    Multiply(x[2], y[0]).add(Multiply(x[3], y[2])),
+                    Multiply(x[2], y[1]).add(Multiply(x[3], y[3]))
+                )
+            }
+
+            private fun Multiply(x: BigInteger, y: BigInteger): BigInteger {
+                return x.multiply(y)
+            }
         }
     }
 }
