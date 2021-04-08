@@ -34,6 +34,33 @@ class MainKtTest {
         assertFailsWith<IllegalArgumentException> {
             cmdArgumentsParser(stringToCMDArray("-s -h localhost -p 99999"))
         }
+        assertFailsWith<IllegalArgumentException> {
+            cmdArgumentsParser(stringToCMDArray("-s -h localhost -p -1"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            cmdArgumentsParser(stringToCMDArray("-s"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            cmdArgumentsParser(stringToCMDArray("--server"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            cmdArgumentsParser(stringToCMDArray("-c"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            cmdArgumentsParser(stringToCMDArray("--server"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            cmdArgumentsParser(stringToCMDArray("-s -p"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            cmdArgumentsParser(stringToCMDArray("-s -p -h"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            cmdArgumentsParser(stringToCMDArray("-c -p -h"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            cmdArgumentsParser(stringToCMDArray(""))
+        }
     }
 
     @Test
@@ -64,6 +91,15 @@ class MainKtTest {
         }
         assertDoesNotThrow {
             cmdArgumentsParser(stringToCMDArray("-h 10.10.10.10 -p 8080 --client"))
+        }
+        assertDoesNotThrow {
+            cmdArgumentsParser(stringToCMDArray("-p 8080 --server"))
+        }
+        assertDoesNotThrow {
+            cmdArgumentsParser(stringToCMDArray("-p 8080 -s"))
+        }
+        assertDoesNotThrow {
+            cmdArgumentsParser(stringToCMDArray("-s -p 1080"))
         }
     }
 }
