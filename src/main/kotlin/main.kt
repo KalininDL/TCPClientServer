@@ -246,14 +246,14 @@ class Server(private val port: String) {
 
             private fun matrixMultiply(x: Array<BigInteger>, y: Array<BigInteger>): Array<BigInteger> {
                 return arrayOf(
-                    Multiply(x[0], y[0]).add(Multiply(x[1], y[2])),
-                    Multiply(x[0], y[1]).add(Multiply(x[1], y[3])),
-                    Multiply(x[2], y[0]).add(Multiply(x[3], y[2])),
-                    Multiply(x[2], y[1]).add(Multiply(x[3], y[3]))
+                    multiply(x[0], y[0]).add(multiply(x[1], y[2])),
+                    multiply(x[0], y[1]).add(multiply(x[1], y[3])),
+                    multiply(x[2], y[0]).add(multiply(x[3], y[2])),
+                    multiply(x[2], y[1]).add(multiply(x[3], y[3]))
                 )
             }
 
-            private fun Multiply(x: BigInteger, y: BigInteger): BigInteger {
+            private fun multiply(x: BigInteger, y: BigInteger): BigInteger {
                 return x.multiply(y)
             }
         }
