@@ -8,6 +8,9 @@ import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
+/**
+ * @author Daniil Kainin
+ */
 
 fun main(args: Array<String>) {
     val parameters: Map<String, String>
@@ -28,6 +31,63 @@ fun main(args: Array<String>) {
         "server" -> Server(parameters["port"]!!).startServer()
         "client" -> Client(parameters["host"]!!, parameters["port"]!!).startClient()
     }
+}
+
+
+fun cmdArgumentsParser(args: Array<String>): Map<String, String> {
+
+    val parameters = HashMap<String, String>()
+    val portRegex = "^([1-9]|[1-5]?[0-9]{2,4}|6[1-4][0-9]{3}|65[1-4][0-9]{2}|655[1-2][0-9]|6553[1-5])$".toRegex()
+    val hostRegex =
+        "^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))|(localhost)$".toRegex()
+
+    var i = 0
+    try {
+        while (i < args.size) {
+            when (args[i]) {
+                "-s", "--server" -> {
+                    if (!parameters.containsKey("type")) {
+                        parameters["type"] = "server"
+                        i++
+                    } else throw IllegalArgumentException("Input parameter must be either server or client!")
+                }
+                "-c", "--client" -> {
+                    if (!parameters.containsKey("type")) {
+                        parameters["type"] = "client"
+                        i++
+                    } else throw IllegalArgumentException("Input parameter must be either server or client!")
+                }
+                "-p", "--port" -> {
+                    parameters["port"] = args[i + 1]
+                    i++
+                }
+                "-h", "--host" -> {
+                    parameters["host"] = args[i + 1]
+                    i++
+                }
+                else -> i++
+            }
+        }
+    } catch (e: ArrayIndexOutOfBoundsException) {
+        throw IllegalArgumentException("Missing parameter!")
+    }
+
+    if (!(parameters.containsKey("type") && parameters["type"].equals("client") &&
+                parameters.containsKey("host") && parameters.containsKey("port")) &&
+        !(parameters.containsKey("type") && parameters["type"].equals("server") &&
+                parameters.containsKey("port"))
+    )
+        throw IllegalArgumentException("One ore more of parameters are missing!")
+
+    if (!parameters["port"]?.matches(portRegex)!!)
+        throw IllegalArgumentException("Port is incorrect!")
+
+    parameters["host"]?.let {
+        if (!parameters["host"]?.matches(hostRegex)!!)
+            throw IllegalArgumentException("Host is incorrect!")
+    }
+
+    return parameters
 }
 
 
@@ -94,62 +154,6 @@ class Client(private val host: String, private val port: String) {
     }
 }
 
-fun cmdArgumentsParser(args: Array<String>): Map<String, String> {
-
-    val parameters = HashMap<String, String>()
-    val portRegex = "^([1-9]|[1-5]?[0-9]{2,4}|6[1-4][0-9]{3}|65[1-4][0-9]{2}|655[1-2][0-9]|6553[1-5])$".toRegex()
-    val hostRegex =
-        "^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))|(localhost)$".toRegex()
-
-    var i = 0
-    try {
-        while (i < args.size) {
-            when (args[i]) {
-                "-s", "--server" -> {
-                    if (!parameters.containsKey("type")) {
-                        parameters["type"] = "server"
-                        i++
-                    } else throw IllegalArgumentException("Input parameter must be either server or client!")
-                }
-                "-c", "--client" -> {
-                    if (!parameters.containsKey("type")) {
-                        parameters["type"] = "client"
-                        i++
-                    } else throw IllegalArgumentException("Input parameter must be either server or client!")
-                }
-                "-p", "--port" -> {
-                    parameters["port"] = args[i + 1]
-                    i++
-                }
-                "-h", "--host" -> {
-                    parameters["host"] = args[i + 1]
-                    i++
-                }
-                else -> i++
-            }
-        }
-    } catch (e: ArrayIndexOutOfBoundsException) {
-        throw IllegalArgumentException("Missing parameter!")
-    }
-
-    if (!(parameters.containsKey("type") && parameters["type"].equals("client") &&
-                parameters.containsKey("host") && parameters.containsKey("port")) &&
-        !(parameters.containsKey("type") && parameters["type"].equals("server") &&
-                parameters.containsKey("port"))
-    )
-        throw IllegalArgumentException("One ore more of parameters are missing!")
-
-    if (!parameters["port"]?.matches(portRegex)!!)
-        throw IllegalArgumentException("Port is incorrect!")
-
-    parameters["host"]?.let {
-        if (!parameters["host"]?.matches(hostRegex)!!)
-            throw IllegalArgumentException("Host is incorrect!")
-    }
-
-    return parameters
-}
-
 class Server(private val port: String) {
 
 
@@ -190,7 +194,7 @@ class Server(private val port: String) {
                         input?.let {
                             when (isValidNumber(input)) {
                                 true -> write(fibonacci.fastFibonacci(input.toInt()).toString())
-                                false -> write("Invalid number! Numbers must be positive or zero. Please try again!")
+                                false -> write("Invalid number! Numbers must be positive or zero and less than 2147483647.\n Please try again!")
                             }
                         }
                     }
